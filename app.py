@@ -1,4 +1,5 @@
 from flask import Flask, render_template, jsonify
+import os
 import pandas as pd
 from cutoff import (
     cutoff_bp,               # the blueprint for the new cutoff page + API
@@ -104,5 +105,6 @@ def branch_dashboard():
     return render_template("breanch.html")
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000)
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port)
 
