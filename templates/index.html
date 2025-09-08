@@ -1,0 +1,911 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TNEA Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --neon-cyan: #00ffff;
+            --neon-pink: #ff00ff;
+            --neon-green: #00ff41;
+            --neon-purple: #8a2be2;
+            --neon-orange: #ff4500;
+            --neon-yellow: #ffff00;
+            --dark-bg: #0a0a0f;
+            --dark-card: #1a1a2e;
+            --dark-border: #16213e;
+            --text-primary: #ffffff;
+            --text-secondary: #a0a0a0;
+        }
+
+        body {
+            font-family: 'Rajdhani', monospace;
+            background: var(--dark-bg);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                radial-gradient(circle at 25% 25%, rgba(0, 255, 255, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 75% 75%, rgba(255, 0, 255, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 50% 50%, rgba(0, 255, 65, 0.05) 0%, transparent 70%);
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        .grid-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                linear-gradient(90deg, rgba(0, 255, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(180deg, rgba(0, 255, 255, 0.03) 1px, transparent 1px);
+            background-size: 50px 50px;
+            pointer-events: none;
+            z-index: -1;
+            animation: gridMove 20s linear infinite;
+        }
+
+        @keyframes gridMove {
+            0% { transform: translate(0, 0); }
+            100% { transform: translate(50px, 50px); }
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        .header h1 {
+            font-family: 'Orbitron', monospace;
+            font-size: clamp(3rem, 6vw, 4.5rem);
+            font-weight: 900;
+            color: var(--neon-cyan);
+            text-shadow: 
+                0 0 10px var(--neon-cyan),
+                0 0 20px var(--neon-cyan),
+                0 0 40px var(--neon-cyan);
+            margin-bottom: 1rem;
+            animation: neonPulse 2s ease-in-out infinite alternate;
+        }
+
+        .header p {
+            font-size: 1.3rem;
+            color: var(--text-secondary);
+            font-weight: 300;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        /* Navigation Styling */
+        .nav-menu {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 2rem 0 3rem 0;
+            list-style: none;
+            gap: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .nav-menu li {
+            position: relative;
+        }
+
+        .nav-menu a {
+            display: block;
+            padding: 12px 25px;
+            background: linear-gradient(135deg, var(--dark-card), rgba(26, 26, 46, 0.8));
+            border: 2px solid var(--dark-border);
+            border-radius: 12px;
+            color: var(--text-primary);
+            text-decoration: none;
+            font-family: 'Orbitron', monospace;
+            font-weight: 600;
+            font-size: 0.95rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .nav-menu a::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(0, 255, 255, 0.2), transparent);
+            transition: all 0.5s ease;
+        }
+
+        .nav-menu a:hover::before {
+            left: 100%;
+        }
+
+        .nav-menu a:hover {
+            transform: translateY(-2px);
+            border-color: var(--neon-cyan);
+            box-shadow: 
+                0 8px 25px rgba(0, 255, 255, 0.3),
+                0 0 20px rgba(0, 255, 255, 0.2);
+            text-shadow: 0 0 10px var(--neon-cyan);
+        }
+
+        .nav-menu li:nth-child(1) a:hover {
+            border-color: var(--neon-pink);
+            box-shadow: 
+                0 8px 25px rgba(255, 0, 255, 0.3),
+                0 0 20px rgba(255, 0, 255, 0.2);
+            text-shadow: 0 0 10px var(--neon-pink);
+        }
+
+        .nav-menu li:nth-child(2) a:hover {
+            border-color: var(--neon-green);
+            box-shadow: 
+                0 8px 25px rgba(0, 255, 65, 0.3),
+                0 0 20px rgba(0, 255, 65, 0.2);
+            text-shadow: 0 0 10px var(--neon-green);
+        }
+
+        .nav-menu li:nth-child(3) a:hover {
+            border-color: var(--neon-orange);
+            box-shadow: 
+                0 8px 25px rgba(255, 69, 0, 0.3),
+                0 0 20px rgba(255, 69, 0, 0.2);
+            text-shadow: 0 0 10px var(--neon-orange);
+        }
+
+        .nav-menu a::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 0;
+            height: 100%;
+            border-right: 2px solid var(--neon-cyan);
+            transition: width 0.3s ease;
+            opacity: 0;
+        }
+
+        .nav-menu a:hover::after {
+            width: 100%;
+            opacity: 1;
+            animation: scanRight 0.6s ease-out;
+        }
+
+        @keyframes scanRight {
+            0% { width: 0; opacity: 1; }
+            100% { width: 100%; opacity: 0.8; }
+        }
+
+        /* Icon additions */
+        .nav-menu a i {
+            margin-right: 8px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .nav-menu a:hover i {
+            transform: rotate(360deg);
+        }
+
+        @keyframes neonPulse {
+            from {
+                text-shadow: 
+                    0 0 10px var(--neon-cyan),
+                    0 0 20px var(--neon-cyan),
+                    0 0 40px var(--neon-cyan);
+            }
+            to {
+                text-shadow: 
+                    0 0 20px var(--neon-cyan),
+                    0 0 30px var(--neon-cyan),
+                    0 0 60px var(--neon-cyan);
+            }
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 2rem;
+            margin-bottom: 3rem;
+        }
+
+        .stat-card {
+            background: var(--dark-card);
+            border: 2px solid var(--dark-border);
+            border-radius: 15px;
+            padding: 2rem;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0, 255, 255, 0.3);
+            border-color: var(--neon-cyan);
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(0, 255, 255, 0.2), transparent);
+            animation: scanline 3s infinite;
+        }
+
+        @keyframes scanline {
+            0% { left: -100%; }
+            100% { left: 100%; }
+        }
+
+        .stat-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1rem;
+        }
+
+        .stat-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            border: 2px solid;
+            transition: all 0.3s ease;
+        }
+
+        .stat-icon.cyan { 
+            color: var(--neon-cyan); 
+            border-color: var(--neon-cyan);
+            box-shadow: 0 0 15px rgba(0, 255, 255, 0.5);
+        }
+        .stat-icon.pink { 
+            color: var(--neon-pink); 
+            border-color: var(--neon-pink);
+            box-shadow: 0 0 15px rgba(255, 0, 255, 0.5);
+        }
+        .stat-icon.green { 
+            color: var(--neon-green); 
+            border-color: var(--neon-green);
+            box-shadow: 0 0 15px rgba(0, 255, 65, 0.5);
+        }
+        .stat-icon.purple { 
+            color: var(--neon-purple); 
+            border-color: var(--neon-purple);
+            box-shadow: 0 0 15px rgba(138, 43, 226, 0.5);
+        }
+
+        .stat-value {
+            font-family: 'Orbitron', monospace;
+            font-size: 2.8rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+            text-shadow: 0 0 10px currentColor;
+        }
+
+        .stat-label {
+            font-size: 1.1rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 600;
+        }
+
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
+            gap: 2.5rem;
+        }
+
+        .chart-card {
+            background: var(--dark-card);
+            border: 2px solid var(--dark-border);
+            border-radius: 20px;
+            padding: 2rem;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.6);
+        }
+
+        .chart-card.wide {
+            grid-column: span 2;
+        }
+
+        .chart-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.8);
+        }
+
+        .chart-card.cyan:hover { 
+            border-color: var(--neon-cyan);
+            box-shadow: 0 15px 40px rgba(0, 255, 255, 0.2);
+        }
+        .chart-card.pink:hover { 
+            border-color: var(--neon-pink);
+            box-shadow: 0 15px 40px rgba(255, 0, 255, 0.2);
+        }
+        .chart-card.green:hover { 
+            border-color: var(--neon-green);
+            box-shadow: 0 15px 40px rgba(0, 255, 65, 0.2);
+        }
+        .chart-card.purple:hover { 
+            border-color: var(--neon-purple);
+            box-shadow: 0 15px 40px rgba(138, 43, 226, 0.2);
+        }
+        .chart-card.orange:hover { 
+            border-color: var(--neon-orange);
+            box-shadow: 0 15px 40px rgba(255, 69, 0, 0.2);
+        }
+
+        .chart-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 2rem;
+            border-bottom: 1px solid var(--dark-border);
+            padding-bottom: 1rem;
+        }
+
+        .chart-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.4rem;
+            margin-right: 1.5rem;
+            border: 2px solid;
+            transition: all 0.3s ease;
+        }
+
+        .chart-header h3 {
+            font-family: 'Orbitron', monospace;
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 220px;
+            margin-bottom: 2rem;
+        }
+
+        .chart-card.wide .chart-container {
+            height: 260px;
+        }
+
+        .insight {
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid var(--dark-border);
+            border-left: 4px solid var(--neon-cyan);
+            border-radius: 10px;
+            padding: 1.5rem;
+            color: var(--text-secondary);
+            font-size: 1rem;
+            line-height: 1.6;
+            position: relative;
+            margin-top: 1.5rem;
+            box-shadow: inset 0 0 10px rgba(0, 255, 255, 0.1);
+        }
+
+        .insight::before {
+            content: '>';
+            position: absolute;
+            left: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--neon-cyan);
+            font-family: 'Orbitron', monospace;
+            font-weight: bold;
+            animation: blink 2s infinite;
+        }
+
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0; }
+        }
+
+        .insight-text {
+            margin-left: 2rem;
+            font-family: 'Rajdhani', monospace;
+        }
+
+        .loading {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            color: var(--neon-cyan);
+        }
+
+        .loading-spinner {
+            width: 60px;
+            height: 60px;
+            border: 3px solid transparent;
+            border-top: 3px solid var(--neon-cyan);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 2rem;
+            box-shadow: 0 0 20px var(--neon-cyan);
+        }
+
+        .loading p {
+            font-family: 'Orbitron', monospace;
+            font-size: 1.2rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            animation: neonPulse 1.5s ease-in-out infinite alternate;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .glitch {
+            animation: glitch 2s infinite;
+        }
+
+        @keyframes glitch {
+            0%, 90%, 100% { transform: translateX(0); }
+            20% { transform: translateX(-2px); }
+            40% { transform: translateX(2px); }
+            60% { transform: translateX(-1px); }
+            80% { transform: translateX(1px); }
+        }
+
+        @media (max-width: 768px) {
+            .container { padding: 1rem; }
+            .header h1 { font-size: 2.5rem; }
+            .charts-grid { 
+                grid-template-columns: 1fr;
+                gap: 2rem;
+            }
+            .chart-card.wide { 
+                grid-column: span 1;
+            }
+            .stats-grid { 
+                grid-template-columns: repeat(2, 1fr);
+            }
+            .chart-container {
+                height: 200px;
+            }
+            .nav-menu {
+                flex-direction: column;
+                gap: 1rem;
+            }
+            .nav-menu a {
+                padding: 10px 20px;
+                font-size: 0.9rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .stats-grid { 
+                grid-template-columns: 1fr;
+            }
+            .chart-card { 
+                padding: 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="grid-overlay"></div>
+
+    <div class="loading" id="loading">
+        <div class="loading-spinner"></div>
+        <p>Initializing Dashboard...</p>
+    </div>
+
+    <div class="container" id="content" style="display: none;">
+        <div class="header">
+            <h1 class="glitch"><i class="fas fa-graduation-cap"></i> TNEA DASHBOARD</h1>
+            <p>ENGINEERING ADMISSIONS</p>
+        </div>
+
+        <!-- Styled Navigation Menu -->
+        <ul class="nav-menu">
+            <li><a href="{{ url_for('cutoff_regional_page') }}"><i class="fas fa-map-marker-alt"></i>Regional Cutoff</a></li>
+            <li><a href="{{ url_for('cutoff_dashboard') }}"><i class="fas fa-chart-line"></i>Cutoff Dashboard</a></li>
+            <li><a href="{{ url_for('branch_dashboard') }}"><i class="fas fa-code-branch"></i>Branch Dashboard</a></li>
+        </ul>
+
+        <div class="stats-grid" id="statsGrid">
+            <!-- Dynamic stats will be inserted here -->
+        </div>
+
+        <div class="charts-grid">
+            <div class="chart-card cyan">
+                <div class="chart-header">
+                    <div class="chart-icon cyan" style="color: var(--neon-cyan); border-color: var(--neon-cyan); box-shadow: 0 0 15px rgba(0, 255, 255, 0.5);">
+                        <i class="fas fa-chart-bar"></i>
+                    </div>
+                    <h3>Round Analysis</h3>
+                </div>
+
+                <div class="chart-container">
+                    <canvas id="roundChart"></canvas>
+                </div>
+                <div class="insight">
+                    <div class="insight-text" id="roundInsight"></div>
+                </div>
+            </div>
+
+            <div class="chart-card pink">
+                <div class="chart-header">
+                    <div class="chart-icon pink" style="color: var(--neon-pink); border-color: var(--neon-pink); box-shadow: 0 0 15px rgba(255, 0, 255, 0.5);">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <h3>Community Matrix</h3>
+                </div>
+                <div class="chart-container">
+                    <canvas id="communityChart"></canvas>
+                </div>
+                <div class="insight">
+                    <div class="insight-text" id="communityInsight"></div>
+                </div>
+            </div>
+
+            <div class="chart-card green">
+                <div class="chart-header">
+                    <div class="chart-icon green" style="color: var(--neon-green); border-color: var(--neon-green); box-shadow: 0 0 15px rgba(0, 255, 65, 0.5);">
+                        <i class="fas fa-building"></i>
+                    </div>
+                    <h3>Institution Grid</h3>
+                </div>
+                <div class="chart-container">
+                    <canvas id="collegeTypeChart"></canvas>
+                </div>
+                <div class="insight">
+                    <div class="insight-text" id="collegeTypeInsight"></div>
+                </div>
+            </div>
+
+            <div class="chart-card purple wide">
+                <div class="chart-header">
+                    <div class="chart-icon purple" style="color: var(--neon-purple); border-color: var(--neon-purple); box-shadow: 0 0 15px rgba(138, 43, 226, 0.5);">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                    <h3>Temporal Analysis</h3>
+                </div>
+                <div class="chart-container">
+                    <canvas id="yearChart"></canvas>
+                </div>
+                <div class="insight">
+                    <div class="insight-text" id="yearInsight"></div>
+                </div>
+            </div>
+
+            <div class="chart-card orange wide">
+                <div class="chart-header">
+                    <div class="chart-icon orange" style="color: var(--neon-orange); border-color: var(--neon-orange); box-shadow: 0 0 15px rgba(255, 69, 0, 0.5);">
+                        <i class="fas fa-university"></i>
+                    </div>
+                    <h3>Elite Institutions</h3>
+                </div>
+                <div class="chart-container">
+                    <canvas id="collegeChart"></canvas>
+                </div>
+                <div class="insight">
+                    <div class="insight-text" id="collegeInsight"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        Chart.defaults.font.family = 'Rajdhani, monospace';
+        Chart.defaults.font.size = 12;
+        Chart.defaults.color = '#a0a0a0';
+        Chart.defaults.borderColor = '#16213e';
+
+        const colors = {
+            neonCyan: '#00ffff',
+            neonPink: '#ff00ff',
+            neonGreen: '#00ff41',
+            neonPurple: '#8a2be2',
+            neonOrange: '#ff4500',
+            neonYellow: '#ffff00',
+            palette: ['#00ffff', '#ff00ff', '#00ff41', '#8a2be2', '#ff4500', '#ffff00', '#ff1493', '#00fa9a']
+        };
+
+        setTimeout(() => {
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('content').style.display = 'block';
+            loadData();
+        }, 2500);
+
+        function loadData() {
+            fetch('/data')
+            .then(response => response.json())
+            .then(data => {
+                createStats(data);
+                createCharts(data);
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                document.getElementById('loading').innerHTML = '<div class="loading-spinner"></div><p>System Error - Data Loading Failed</p>';
+                document.getElementById('loading').style.display = 'flex';
+            });
+        }
+
+        function createStats(data) {
+            const stats = [
+                {
+                    icon: 'fas fa-clipboard-list',
+                    value: data.rounds.data.reduce((a, b) => a + b, 0).toLocaleString(),
+                    label: 'Total Allotments',
+                    class: 'cyan'
+                },
+                {
+                    icon: 'fas fa-calendar-alt',
+                    value: data.years.labels.length,
+                    label: 'Data Cycles',
+                    class: 'pink'
+                },
+                {
+                    icon: 'fas fa-university',
+                    value: data.top10_colleges.labels.length,
+                    label: 'Elite Nodes',
+                    class: 'green'
+                },
+                {
+                    icon: 'fas fa-users',
+                    value: data.community.labels.length,
+                    label: 'Categories',
+                    class: 'purple'
+                }
+            ];
+
+            document.getElementById('statsGrid').innerHTML = stats.map(stat => `
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <div class="stat-icon ${stat.class}">
+                            <i class="${stat.icon}"></i>
+                        </div>
+                    </div>
+                    <div class="stat-value">${stat.value}</div>
+                    <div class="stat-label">${stat.label}</div>
+                </div>
+            `).join('');
+        }
+
+        function createCharts(data) {
+            // Round Chart - Neon Bars
+            new Chart(document.getElementById('roundChart'), {
+                type: 'bar',
+                data: {
+                    labels: data.rounds.labels,
+                    datasets: [{
+                        data: data.rounds.data,
+                        backgroundColor: colors.palette.slice(0, data.rounds.labels.length).map(color => color + '40'),
+                        borderColor: colors.palette.slice(0, data.rounds.labels.length),
+                        borderWidth: 2,
+                        borderRadius: 5,
+                        shadowColor: colors.neonCyan,
+                        shadowBlur: 20
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: { color: 'rgba(0, 255, 255, 0.1)' },
+                            ticks: { color: '#a0a0a0' }
+                        },
+                        x: {
+                            grid: { display: false },
+                            ticks: { color: '#a0a0a0' }
+                        }
+                    }
+                }
+            });
+            document.getElementById('roundInsight').innerText = 
+                `ROUND ${data.rounds.labels[data.rounds.data.indexOf(Math.max(...data.rounds.data))]} ACHIEVED MAXIMUM EFFICIENCY WITH ${Math.max(...data.rounds.data).toLocaleString()} SUCCESSFUL CONNECTIONS. OPTIMAL PERFORMANCE DETECTED.`;
+
+            // Community Chart - Neon Doughnut
+            new Chart(document.getElementById('communityChart'), {
+                type: 'doughnut',
+                data: {
+                    labels: data.community.labels,
+                    datasets: [{
+                        data: data.community.data,
+                        backgroundColor: colors.palette.map(color => color + '30'),
+                        borderColor: colors.palette,
+                        borderWidth: 2,
+                        cutout: '65%'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'bottom',
+                            labels: {
+                                color: '#a0a0a0',
+                                font: { size: 11 },
+                                padding: 15,
+                                usePointStyle: true
+                            }
+                        }
+                    }
+                }
+            });
+            const totalCommunity = data.community.data.reduce((a, b) => a + b, 0);
+            const maxCommunity = Math.max(...data.community.data);
+            const topCommunity = data.community.labels[data.community.data.indexOf(maxCommunity)];
+            document.getElementById('communityInsight').innerText = 
+                `${topCommunity.toUpperCase()} SECTOR DOMINATES WITH ${((maxCommunity / totalCommunity) * 100).toFixed(1)}% ALLOCATION. NEURAL NETWORK CONFIRMS BALANCED DISTRIBUTION ACROSS ALL NODES.`;
+
+            // College Type Chart - Neon Pie
+            new Chart(document.getElementById('collegeTypeChart'), {
+                type: 'pie',
+                data: {
+                    labels: data.college_type.labels,
+                    datasets: [{
+                        data: data.college_type.data,
+                        backgroundColor: [colors.neonGreen + '40', colors.neonPink + '40', colors.neonOrange + '40'],
+                        borderColor: [colors.neonGreen, colors.neonPink, colors.neonOrange],
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'bottom',
+                            labels: {
+                                color: '#a0a0a0',
+                                font: { size: 11 },
+                                padding: 15,
+                                usePointStyle: true
+                            }
+                        }
+                    }
+                }
+            });
+            document.getElementById('collegeTypeInsight').innerText = 
+                `GOVERNMENT INSTITUTIONS CONTROL ${((data.college_type.data[0] / data.college_type.data.reduce((a,b) => a+b, 0)) * 100).toFixed(1)}% OF THE GRID WITH ${data.college_type.data[0].toLocaleString()} ACTIVE CONNECTIONS.`;
+
+            // Year Chart - Neon Line
+            new Chart(document.getElementById('yearChart'), {
+                type: 'line',
+                data: {
+                    labels: data.years.labels,
+                    datasets: [{
+                        data: data.years.data,
+                        borderColor: colors.neonPurple,
+                        backgroundColor: colors.neonPurple + '20',
+                        fill: true,
+                        tension: 0.4,
+                        pointRadius: 6,
+                        pointHoverRadius: 8,
+                        pointBackgroundColor: colors.neonPurple,
+                        pointBorderColor: '#ffffff',
+                        pointBorderWidth: 2,
+                        borderWidth: 3,
+                        shadowColor: colors.neonPurple,
+                        shadowBlur: 20
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: { color: 'rgba(138, 43, 226, 0.1)' },
+                            ticks: { color: '#a0a0a0' }
+                        },
+                        x: {
+                            grid: { display: false },
+                            ticks: { color: '#a0a0a0' }
+                        }
+                    }
+                }
+            });
+            const growth = ((data.years.data[data.years.data.length-1] - data.years.data[0]) / data.years.data[0] * 100).toFixed(1);
+            document.getElementById('yearInsight').innerText = 
+                `TEMPORAL ANALYSIS REVEALS ${growth}% EXPONENTIAL GROWTH FROM ${data.years.labels[0]} TO ${data.years.labels[data.years.labels.length-1]}. SYSTEM EXPANSION CONFIRMED.`;
+
+            // College Chart - Neon Horizontal Bars
+            new Chart(document.getElementById('collegeChart'), {
+                type: 'bar',
+                data: {
+                    labels: data.top10_colleges.labels.map(name => 
+                        (name.length > 30 ? name.substring(0, 30) + '...' : name).toUpperCase()
+                    ),
+                    datasets: [{
+                        data: data.top10_colleges.data,
+                        backgroundColor: colors.neonOrange + '40',
+                        borderColor: colors.neonOrange,
+                        borderWidth: 2,
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: {
+                            beginAtZero: true,
+                            grid: { color: 'rgba(255, 69, 0, 0.1)' },
+                            ticks: { color: '#a0a0a0' }
+                        },
+                        y: {
+                            grid: { display: false },
+                            ticks: { 
+                                color: '#a0a0a0',
+                                font: { size: 10 }
+                            }
+                        }
+                    }
+                }
+            });
+            const maxCutoff = Math.max(...data.top10_colleges.data);
+            const topCollege = data.top10_colleges.labels[data.top10_colleges.data.indexOf(maxCutoff)];
+            document.getElementById('collegeInsight').innerText = 
+                `${topCollege.toUpperCase()} MAINTAINS MAXIMUM THRESHOLD AT ${maxCutoff.toFixed(1)} POINTS. ELITE NODE CONFIRMED AS PRIMARY TARGET.`;
+        }
+    </script>
+</body>
+</html>

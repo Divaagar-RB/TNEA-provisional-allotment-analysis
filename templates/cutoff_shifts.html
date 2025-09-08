@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Cutoff Shifts</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <h1>Cutoff Insights Dashboard</h1>
+
+  <!-- 1. Average cutoff by year -->
+  <section>
+    <h2>Yearly Average Cutoff</h2>
+    <ul>
+      {% for row in insights.yearly_avg %}
+        <li>{{ row.YEAR }} → Avg: {{ row.AGGRMARK|default(0)|round(2) }} 
+            (Δ {{ row.YoY_Change|default(0)|round(2) }})</li>
+      {% endfor %}
+    </ul>
+  </section>
+
+  <!-- 2. Top 10 Colleges -->
+  <section>
+    <h2>Top 10 Colleges with Increasing Cutoff</h2>
+    <ul>
+      {% for c in insights.top10_colleges %}
+        <li>{{ c.COLLENAME }} (+{{ c.Net_Increase|default(0)|round(2) }})</li>
+      {% endfor %}
+    </ul>
+  </section>
+
+  <!-- 3. Top 10 Branches -->
+  <section>
+    <h2>Top 10 Branches with Increasing Cutoff</h2>
+    <ul>
+      {% for b in insights.top10_branches %}
+        <li>{{ b.COLLENAME }} – {{ b.BRANCHCODE }} (+{{ b.Net_Increase|default(0)|round(2) }})</li>
+      {% endfor %}
+    </ul>
+  </section>
+
+  <!-- 4. Decreasing Branches -->
+  <section>
+    <h2>Decreasing Branches</h2>
+    <ul>
+      {% for d in insights.decreasing_branches %}
+        <li>{{ d.COLLENAME }} – {{ d.BRANCHCODE }} (↓ {{ d.Net_Decrease|default(0)|round(2) }})</li>
+      {% endfor %}
+    </ul>
+  </section>
+
+  <!-- 5. Community Trends -->
+  <section>
+    <h2>Community-wise Cutoff Trends</h2>
+    <ul>
+      {% for ct in insights.community_trend %}
+        <li>{{ ct.YEAR }} – {{ ct.COMMUNITY }}: {{ ct.AGGRMARK|default(0)|round(2) }}</li>
+      {% endfor %}
+    </ul>
+  </section>
+
+  <!-- 6. Emerging Branches -->
+  <section>
+    <h2>Emerging Branches</h2>
+    <ul>
+      {% for eb in insights.emerging_branches %}
+        <li>{{ eb.COLLENAME }} – {{ eb.BRANCHCODE }} 
+            (+{{ eb.Net_Increase|default(0)|round(2) }}, 
+             {{ eb.GrowthPercent|default(0)|round(2) }}%)</li>
+      {% endfor %}
+    </ul>
+  </section>
+
+</body>
+</html>

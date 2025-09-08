@@ -1,0 +1,931 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Neural Network Cutoff Analysis System</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --neon-cyan: #00ffff;
+      --neon-pink: #ff00ff;
+      --neon-green: #00ff00;
+      --neon-purple: #8a2be2;
+      --neon-orange: #ff6600;
+      --neon-blue: #0080ff;
+      --dark-bg: #0a0a0a;
+      --dark-card: #111111;
+      --grid-color: #333;
+    }
+
+    body {
+      background: var(--dark-bg);
+      color: #ffffff;
+      font-family: 'Rajdhani', monospace;
+      overflow-x: hidden;
+      position: relative;
+    }
+
+    /* Animated Background Grid */
+    body::before {
+      content: '';
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-image: 
+        linear-gradient(rgba(0, 255, 255, 0.1) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0, 255, 255, 0.1) 1px, transparent 1px);
+      background-size: 50px 50px;
+      animation: gridMove 20s linear infinite;
+      z-index: -2;
+    }
+
+    body::after {
+      content: '';
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: radial-gradient(circle at 20% 80%, rgba(255, 0, 255, 0.1) 0%, transparent 50%),
+                  radial-gradient(circle at 80% 20%, rgba(0, 255, 255, 0.1) 0%, transparent 50%);
+      animation: pulseGlow 4s ease-in-out infinite alternate;
+      z-index: -1;
+    }
+
+    @keyframes gridMove {
+      0% { transform: translate(0, 0); }
+      100% { transform: translate(50px, 50px); }
+    }
+
+    @keyframes pulseGlow {
+      0% { opacity: 0.3; }
+      100% { opacity: 0.7; }
+    }
+
+    @keyframes glitch {
+      0%, 100% { transform: translateX(0); }
+      20% { transform: translateX(-2px); }
+      40% { transform: translateX(2px); }
+      60% { transform: translateX(-1px); }
+      80% { transform: translateX(1px); }
+    }
+
+    @keyframes neonPulse {
+      0%, 100% { text-shadow: 0 0 5px currentColor, 0 0 10px currentColor, 0 0 15px currentColor; }
+      50% { text-shadow: 0 0 10px currentColor, 0 0 20px currentColor, 0 0 30px currentColor; }
+    }
+
+    @keyframes scanline {
+      0% { transform: translateX(-100%); }
+      100% { transform: translateX(100vw); }
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 20px;
+      position: relative;
+      z-index: 1;
+    }
+
+    h1 {
+      font-family: 'Orbitron', monospace;
+      font-weight: 900;
+      font-size: clamp(2rem, 4vw, 4rem);
+      text-align: center;
+      color: var(--neon-cyan);
+      text-shadow: 
+        0 0 10px var(--neon-cyan),
+        0 0 20px var(--neon-cyan),
+        0 0 30px var(--neon-cyan);
+      margin-bottom: 40px;
+      animation: glitch 3s infinite, neonPulse 2s infinite;
+      position: relative;
+    }
+
+    h1::after {
+      content: '█';
+      animation: blink 1s infinite;
+      color: var(--neon-green);
+    }
+
+    @keyframes blink {
+      0%, 50% { opacity: 1; }
+      51%, 100% { opacity: 0; }
+    }
+
+    .section {
+      margin: 60px 0;
+      position: relative;
+    }
+
+    .section-title {
+      font-family: 'Orbitron', monospace;
+      font-weight: 700;
+      font-size: clamp(1.2rem, 2.5vw, 2rem);
+      margin-bottom: 30px;
+      text-align: center;
+      position: relative;
+    }
+
+    .section-title::before {
+      content: '>';
+      margin-right: 10px;
+      color: var(--neon-green);
+      text-shadow: 0 0 10px var(--neon-green);
+    }
+
+    .section-title::after {
+      content: '';
+      position: absolute;
+      bottom: -5px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 200px;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, var(--neon-cyan), transparent);
+      box-shadow: 0 0 10px var(--neon-cyan);
+    }
+
+    .trend-title {
+      color: var(--neon-purple);
+      text-shadow: 0 0 10px var(--neon-purple);
+    }
+
+    .elite-title {
+      color: var(--neon-pink);
+      text-shadow: 0 0 10px var(--neon-pink);
+    }
+
+    .increasing-title {
+      color: var(--neon-green);
+      text-shadow: 0 0 10px var(--neon-green);
+    }
+
+    .decreasing-title {
+      color: var(--neon-orange);
+      text-shadow: 0 0 10px var(--neon-orange);
+    }
+
+    .community-title {
+      color: var(--neon-blue);
+      text-shadow: 0 0 10px var(--neon-blue);
+    }
+
+    .card {
+      background: var(--dark-card);
+      border: 1px solid #333;
+      border-radius: 15px;
+      padding: 30px;
+      margin: 20px 0;
+      position: relative;
+      transition: all 0.3s ease;
+      overflow: hidden;
+    }
+
+    .card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 2px;
+      height: 100%;
+      background: var(--neon-cyan);
+      box-shadow: 0 0 10px var(--neon-cyan);
+      animation: scanline 3s infinite linear;
+    }
+
+    .card:hover {
+      transform: translateY(-5px);
+      box-shadow: 
+        0 10px 30px rgba(0, 255, 255, 0.3),
+        inset 0 1px 0 rgba(0, 255, 255, 0.2);
+      border-color: var(--neon-cyan);
+    }
+
+    .chart-container {
+      position: relative;
+      height: 400px;
+      margin: 20px 0;
+    }
+
+    canvas {
+      border-radius: 10px;
+      background: rgba(17, 17, 17, 0.8) !important;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+      font-family: 'Rajdhani', monospace;
+      background: rgba(17, 17, 17, 0.9);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    th {
+      background: linear-gradient(45deg, #1a1a1a, #2a2a2a);
+      color: var(--neon-cyan);
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      padding: 15px 10px;
+      border-bottom: 2px solid var(--neon-cyan);
+      text-shadow: 0 0 5px var(--neon-cyan);
+    }
+
+    td {
+      padding: 12px 10px;
+      border-bottom: 1px solid #333;
+      transition: all 0.3s ease;
+    }
+
+    tr:nth-child(even) {
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    tr:hover {
+      background: rgba(0, 255, 255, 0.1);
+      transform: scale(1.02);
+    }
+
+    .trend-up {
+      color: var(--neon-green);
+      text-shadow: 0 0 5px var(--neon-green);
+    }
+
+    .trend-down {
+      color: var(--neon-orange);
+      text-shadow: 0 0 5px var(--neon-orange);
+    }
+
+    .insights {
+      margin: 40px 0;
+      padding: 25px;
+      background: linear-gradient(145deg, #0d0d0d, #1a1a1a);
+      border: 1px solid var(--neon-green);
+      border-radius: 15px;
+      box-shadow: 
+        0 0 20px rgba(0, 255, 0, 0.2),
+        inset 0 1px 0 rgba(0, 255, 0, 0.1);
+      position: relative;
+    }
+
+    .insights::before {
+      content: 'SYSTEM ANALYSIS';
+      position: absolute;
+      top: -10px;
+      left: 20px;
+      background: var(--dark-bg);
+      color: var(--neon-green);
+      padding: 0 10px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      text-shadow: 0 0 10px var(--neon-green);
+    }
+
+    .insights h3 {
+      color: var(--neon-green);
+      font-family: 'Orbitron', monospace;
+      margin-bottom: 15px;
+      text-shadow: 0 0 10px var(--neon-green);
+    }
+
+    .insights p {
+      line-height: 1.6;
+      margin-bottom: 10px;
+      font-weight: 400;
+    }
+
+    .loading {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 200px;
+    }
+
+    .spinner {
+      width: 50px;
+      height: 50px;
+      border: 3px solid transparent;
+      border-top: 3px solid var(--neon-cyan);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    /* Responsive Design */
+    @media (max-width: 768px) {
+      .container {
+        padding: 10px;
+      }
+      
+      .card {
+        padding: 15px;
+      }
+      
+      table {
+        font-size: 0.9rem;
+      }
+      
+      th, td {
+        padding: 8px 5px;
+      }
+    }
+
+    /* Gaming Terminal Style */
+    .terminal-text {
+      font-family: 'Rajdhani', monospace;
+      color: var(--neon-green);
+      background: #000;
+      padding: 10px;
+      border-radius: 5px;
+      border: 1px solid var(--neon-green);
+      box-shadow: 0 0 10px rgba(0, 255, 0, 0.3);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>NEURAL NETWORK CUTOFF ANALYSIS SYSTEM</h1>
+
+    <div class="section">
+      <h2 class="section-title trend-title">📈 TEMPORAL CUTOFF ANALYSIS</h2>
+      <div class="card">
+        <div class="chart-container">
+          <canvas id="avgTrendChart"></canvas>
+        </div>
+        <div class="insights">
+          <h3>SYSTEM INSIGHTS</h3>
+          <p>• Neural network detects increasing cutoff trends across temporal nodes</p>
+          <p>• Data matrix shows consistent upward trajectory in admission thresholds</p>
+          <p>• Algorithmic analysis suggests competitive landscape intensification</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2 class="section-title elite-title">🏫 ELITE INSTITUTION GRID</h2>
+      <div class="card">
+        <table id="collegeTable"></table>
+        <div class="insights">
+          <h3>ELITE NODE ANALYSIS</h3>
+          <p>• Top-tier institutions demonstrate premium admission thresholds</p>
+          <p>• Network hierarchy reflects academic excellence rankings</p>
+          <p>• System identifies significant year-over-year variations</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2 class="section-title increasing-title">📊 ASCENDING BRANCH PROTOCOLS</h2>
+      <div class="card">
+        <table id="increasingTable"></table>
+        <div class="insights">
+          <h3>GROWTH VECTOR ANALYSIS</h3>
+          <p>• AI and Data Science branches show maximum growth acceleration</p>
+          <p>• Emerging technologies driving cutoff inflation patterns</p>
+          <p>• System detects strong correlation with industry demand</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2 class="section-title decreasing-title">📉 DECLINING BRANCH MATRIX</h2>
+      <div class="card">
+        <table id="decreasingTable"></table>
+        <div class="insights">
+          <h3>REGRESSION PATTERN ANALYSIS</h3>
+          <p>• Traditional engineering branches experiencing cutoff reduction</p>
+          <p>• Market saturation affecting admission competitiveness</p>
+          <p>• System suggests strategic opportunity windows</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2 class="section-title community-title">👥 COMMUNITY MATRIX ANALYSIS</h2>
+      <div class="card">
+        <div class="chart-container">
+          <canvas id="communityChart"></canvas>
+        </div>
+        <div class="insights">
+          <h3>DEMOGRAPHIC DISTRIBUTION SCAN</h3>
+          <p>• Multi-dimensional analysis across community segments</p>
+          <p>• Network topology reveals reservation impact patterns</p>
+          <p>• System tracks equitable access distribution metrics</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Enhanced branch mapping with gaming terminology
+    const branchNames = {
+      "AO": "AEROSPACE ENGINEERING",
+      "AE": "AERONAUTICAL ENGINEERING", 
+      "AG": "AGRICULTURAL ENGINEERING",
+      "AN": "ANIMATION AND GRAPHICS",
+      "AP": "APPAREL TECHNOLOGY (SS)",
+      "AR": "ARCHITECTURE",
+      "BA": "ARCHITECTURE (SS)",
+      "AD": "ARTIFICIAL INTELLIGENCE AND DATA SCIENCE",
+      "AT": "ARTIFICIAL INTELLIGENCE AND DATA SCIENCE (SS)",
+      "AL": "ARTIFICIAL INTELLIGENCE AND MACHINE LEARNING",
+      "AU": "AUTOMOBILE ENGINEERING",
+      "AS": "AUTOMOBILE ENGINEERING (SS)",
+      "BP": "B.PLAN",
+      "DA": "BACHELOR OF DESIGN",
+      "BM": "BIO MEDICAL ENGINEERING",
+      "BY": "BIO MEDICAL ENGINEERING (SS)",
+      "BT": "BIO TECHNOLOGY",
+      "BS": "BIO TECHNOLOGY (SS)",
+      "BC": "BIO TECHNOLOGY AND BIO CHEMICAL ENGINEERING",
+      "CR": "CERAMIC TECHNOLOGY (SS)",
+      "CH": "CHEMICAL ENGINEERING",
+      "CL": "CHEMICAL ENGINEERING (SS)",
+      "CC": "CHEMICAL AND ELECTRO CHEMICAL ENGINEERING (SS)",
+      "CX": "CHEMICAL AND ELECTROCHEMICAL ENGINEERING",
+      "CE": "CIVIL ENGINEERING",
+      "CN": "CIVIL ENGINEERING (SS)",
+      "CZ": "CIVIL AND STRUCTURAL ENGINEERING",
+      "XC": "CIVIL ENGINEERING (TAMIL MEDIUM)",
+      "CK": "CIVIL ENGINEERING (ENVIRONMENTAL ENGINEERING)",
+      "CO": "COMPUTER AND COMMUNICATION ENGINEERING",
+      "CW": "COMPUTER SCIENCE AND BUSINESS SYSTEM (SS)",
+      "CB": "COMPUTER SCIENCE AND BUSINESS SYSTEM",
+      "CD": "COMPUTER SCIENCE AND DESIGN",
+      "CS": "COMPUTER SCIENCE AND ENGINEERING",
+      "AM": "COMPUTER SCIENCE AND ENGINEERING (AI & ML)",
+      "CG": "COMPUTER SCIENCE AND ENGINEERING (AI & ML) (SS)",
+      "SC": "COMPUTER SCIENCE AND ENGINEERING (CYBER SECURITY)",
+      "CF": "COMPUTER SCIENCE AND ENGINEERING (DATA SCIENCE)",
+      "SB": "COMPUTER SCIENCE AND ENGINEERING (IoT & CYBER SECURITY INCLUDING BLOCKCHAIN)",
+      "CI": "COMPUTER SCIENCE AND ENGINEERING (IoT)",
+      "CM": "COMPUTER SCIENCE AND ENGINEERING (SS)",
+      "XS": "COMPUTER SCIENCE AND ENGINEERING (TAMIL)",
+      "CA": "COMPUTER SCIENCE AND ENGINEERING (ARTIFICIAL INTELLIGENCE)",
+      "TS": "COMPUTER SCIENCE AND TECHNOLOGY",
+      "CT": "COMPUTER TECHNOLOGY",
+      "CY": "CYBER SECURITY",
+      "EF": "ELECTRICAL AND COMPUTER ENGINEERING",
+      "ES": "ELECTRICAL AND ELECTRONICS (SANDWICH) (SS)",
+      "EE": "ELECTRICAL AND ELECTRONICS ENGINEERING",
+      "EY": "ELECTRICAL AND ELECTRONICS ENGINEERING (SS)",
+      "ET": "ELECTRONICS AND TELECOMMUNICATION ENGINEERING",
+      "EA": "ELECTRONICS AND COMMUNICATION (ADVANCED COMMUNICATION TECHNOLOGY)",
+      "EC": "ELECTRONICS AND COMMUNICATION ENGINEERING",
+      "EM": "ELECTRONICS AND COMMUNICATION ENGINEERING (SS)",
+      "EX": "ELECTRONICS AND COMPUTER ENGINEERING",
+      "EI": "ELECTRONICS AND INSTRUMENTATION ENGINEERING",
+      "EV": "ELECTRONICS ENGINEERING (VLSI DESIGN AND TECHNOLOGY)",
+      "EL": "ELECTRONICS ENGINEERING (VLSI DESIGN AND TECHNOLOGY)",
+      "IX": "ELECTRONICS INSTRUMENTATION AND CONTROL ENGINEERING",
+      "EN": "ENVIRONMENTAL ENGINEERING",
+      "FT": "FASHION TECHNOLOGY",
+      "FY": "FASHION TECHNOLOGY (SS)",
+      "FD": "FOOD TECHNOLOGY",
+      "FS": "FOOD TECHNOLOGY (SS)",
+      "GI": "GEO INFORMATICS",
+      "HT": "HANDLOOM AND TEXTILE TECHNOLOGY",
+      "IB": "INDUSTRIAL BIO TECHNOLOGY",
+      "IS": "INDUSTRIAL BIO TECHNOLOGY (SS)",
+      "IE": "INDUSTRIAL ENGINEERING",
+      "IN": "INDUSTRIAL ENGINEERING AND MANAGEMENT",
+      "SE": "INFORMATION SCIENCE AND ENGINEERING",
+      "IT": "INFORMATION TECHNOLOGY",
+      "IM": "INFORMATION TECHNOLOGY (SS)",
+      "IC": "INSTRUMENTATION AND CONTROL ENGINEERING",
+      "IY": "INSTRUMENTATION AND CONTROL ENGINEERING (SS)",
+      "ID": "INTERIOR DESIGN (SS)",
+      "LE": "LEATHER TECHNOLOGY",
+      "CJ": "M.TECH. COMPUTER SCIENCE AND ENGINEERING (INTEGRATED 5 YEARS)",
+      "MN": "MANUFACTURING ENGINEERING",
+      "MR": "MARINE ENGINEERING",
+      "MA": "MATERIAL SCIENCE AND ENGINEERING (SS)",
+      "MU": "MECHANICAL AND AUTOMATION ENGINEERING",
+      "MO": "MECHANICAL AND MECHATRONICS ENGINEERING (ADDITIVE MANUFACTURING)",
+      "MJ": "MECHANICAL AND SMART MANUFACTURING",
+      "ME": "MECHANICAL ENGINEERING",
+      "MM": "MECHANICAL ENGINEERING (MANUFACTURING)",
+      "MH": "MECHANICAL ENGINEERING (SANDWICH)",
+      "MS": "MECHANICAL ENGINEERING (SANDWICH) (SS)",
+      "MF": "MECHANICAL ENGINEERING (SS)",
+      "XM": "MECHANICAL ENGINEERING (TAMIL MEDIUM)",
+      "MB": "MECHANICAL ENGINEERING (AUTOMOBILE)",
+      "MC": "MECHATRONICS",
+      "MG": "MECHATRONICS (SS)",
+      "MZ": "MECHATRONICS ENGINEERING",
+      "MD": "MEDICAL ELECTRONICS ENGINEERING",
+      "MT": "METALLURGICAL ENGINEERING",
+      "MY": "METALLURGICAL ENGINEERING (SS)",
+      "MI": "MINING ENGINEERING",
+      "PD": "PETRO CHEMICAL ENGINEERING",
+      "PC": "PETRO CHEMICAL TECHNOLOGY",
+      "PE": "PETROLEUM ENGINEERING",
+      "PP": "PETROLEUM ENGINEERING AND TECHNOLOGY (SS)",
+      "PH": "PHARMACEUTICAL TECHNOLOGY",
+      "PM": "PHARMACEUTICAL TECHNOLOGY (SS)",
+      "PA": "PLASTIC TECHNOLOGY",
+      "PT": "PRINTING AND PACKING TECHNOLOGY",
+      "PR": "PRODUCTION ENGINEERING",
+      "PS": "PRODUCTION ENGINEERING (SANDWICH) (SS)",
+      "PN": "PRODUCTION ENGINEERING (SS)",
+      "RI": "ROBOTICS AND ARTIFICIAL INTELLIGENCE",
+      "RM": "ROBOTICS AND AUTOMATION",
+      "RA": "ROBOTICS AND AUTOMATION (SS)",
+      "RP": "RUBBER AND PLASTIC TECHNOLOGY",
+      "SF": "SAFETY AND FIRE ENGINEERING",
+      "TC": "TEXTILE CHEMISTRY",
+      "TX": "TEXTILE TECHNOLOGY",
+      "TT": "TEXTILE TECHNOLOGY (SS)"
+    };
+
+    // Gaming-themed color palette for charts
+    const neonColors = [
+      '#00ffff', '#ff00ff', '#00ff00', '#8a2be2', 
+      '#ff6600', '#0080ff', '#ffff00', '#ff0080',
+      '#80ff00', '#ff8000', '#0040ff', '#ff4080'
+    ];
+
+    function normalize(data) {
+      if (Array.isArray(data)) return data;
+      const keys = Object.keys(data);
+      if (!keys.length) return [];
+      const len = data[keys[0]].length;
+      return Array.from({ length: len }, (_, i) =>
+        keys.reduce((row, k) => {
+          row[k] = data[k][i];
+          return row;
+        }, {})
+      );
+    }
+
+    // Show loading spinner
+    function showLoading(elementId) {
+      document.getElementById(elementId).innerHTML = `
+        <div class="loading">
+          <div class="spinner"></div>
+        </div>
+      `;
+    }
+
+    async function loadDashboard() {
+      try {
+        // Show loading for all elements
+        showLoading("avgTrendChart");
+        showLoading("collegeTable");
+        showLoading("increasingTable");
+        showLoading("decreasingTable");
+        showLoading("communityChart");
+
+        // YOUR ORIGINAL BACKEND CALL - EXACTLY AS YOU HAD IT
+        const res = await fetch("/cutoff-dashboard-data");
+        const rawData = await res.json();
+
+        const yearlyAvgTrend = normalize(rawData.yearly_avg_trend);
+        const topColleges = normalize(rawData.top_10_colleges_by_average_overall_cutoff);
+        const increasingBranches = normalize(rawData.increasing_branches);
+        const decreasingBranches = normalize(rawData.decreasing_branches);
+        const communityTrends = normalize(rawData.community_avg_mark_trends);
+
+        // === Chart 1: Yearly Avg Cutoff with Neon Styling ===
+        new Chart(document.getElementById("avgTrendChart"), {
+          type: "line",
+          data: {
+            labels: yearlyAvgTrend.map(r => `CYCLE ${r.YEAR}`),
+            datasets: [{
+              label: "Average Cutoff Neural Network",
+              data: yearlyAvgTrend.map(r => r.AVG),
+              borderColor: "#00ffff",
+              backgroundColor: "rgba(0, 255, 255, 0.1)",
+              borderWidth: 3,
+              pointRadius: 8,
+              pointBackgroundColor: "#00ffff",
+              pointBorderColor: "#ffffff",
+              pointBorderWidth: 2,
+              pointHoverRadius: 12,
+              fill: true,
+              tension: 0.4,
+              shadowColor: "rgba(0, 255, 255, 0.5)",
+              shadowBlur: 20
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: {
+                labels: {
+                  color: '#00ffff',
+                  font: {
+                    family: 'Orbitron',
+                    size: 14
+                  }
+                }
+              }
+            },
+            scales: {
+              x: {
+                ticks: {
+                  color: '#00ffff',
+                  font: {
+                    family: 'Rajdhani',
+                    size: 12
+                  }
+                },
+                grid: {
+                  color: 'rgba(0, 255, 255, 0.2)'
+                }
+              },
+              y: {
+                ticks: {
+                  color: '#00ffff',
+                  font: {
+                    family: 'Rajdhani',
+                    size: 12
+                  }
+                },
+                grid: {
+                  color: 'rgba(0, 255, 255, 0.2)'
+                }
+              }
+            }
+          }
+        });
+
+        // === Table: Top Colleges with Gaming Style ===
+        const collegeTable = document.getElementById("collegeTable");
+        collegeTable.innerHTML = `
+          <tr>
+            <th>ELITE INSTITUTION NODE</th>
+            <th>CYCLE 2023</th>
+            <th>CYCLE 2024</th>
+            <th>CYCLE 2025</th>
+            <th>NET DELTA</th>
+            <th>GROWTH %</th>
+            <th>TRAJECTORY</th>
+          </tr>
+          ${topColleges.map(r => `
+            <tr>
+              <td><strong>${r.COLLENAME}</strong></td>
+              <td>${r["2023"].toFixed(2)}</td>
+              <td>${r["2024"].toFixed(2)}</td>
+              <td>${r["2025"].toFixed(2)}</td>
+              <td class="trend-up">+${r.Net_Increase_Cutoff.toFixed(2)}</td>
+              <td class="trend-up">+${r.Pct_Change.toFixed(2)}%</td>
+              <td><span class="trend-up">▲ ${r.Trend}</span></td>
+            </tr>
+          `).join("")}
+        `;
+
+        // === Table: Increasing Branches ===
+        const incTable = document.getElementById("increasingTable");
+        incTable.innerHTML = `
+          <tr>
+            <th>BRANCH PROTOCOL</th>
+            <th>CYCLE 2023</th>
+            <th>CYCLE 2024</th>
+            <th>CYCLE 2025</th>
+            <th>NET GAIN</th>
+            <th>AMPLIFICATION %</th>
+          </tr>
+          ${increasingBranches.slice(0, 20).map(r => `
+            <tr>
+              <td><strong>${branchNames[r.BRANCHCODE] || r.BRANCHCODE}</strong></td>
+              <td>${Number(r["2023"]).toFixed(2)}</td>
+              <td>${Number(r["2024"]).toFixed(2)}</td>
+              <td>${Number(r["2025"]).toFixed(2)}</td>
+              <td class="trend-up">+${Number(r.Net_Increase).toFixed(2)}</td>
+              <td class="trend-up">+${Number(r.Pct_Change).toFixed(2)}%</td>
+            </tr>
+          `).join("")}
+        `;
+
+        // === Table: Decreasing Branches ===
+        const decTable = document.getElementById("decreasingTable");
+        decTable.innerHTML = `
+          <tr>
+            <th>BRANCH PROTOCOL</th>
+            <th>CYCLE 2023</th>
+            <th>CYCLE 2024</th>
+            <th>CYCLE 2025</th>
+            <th>NET LOSS</th>
+            <th>REDUCTION %</th>
+          </tr>
+          ${decreasingBranches.slice(0, 20).map(r => `
+            <tr>
+              <td><strong>${branchNames[r.BRANCHCODE] || r.BRANCHCODE}</strong></td>
+              <td>${Number(r["2023"]).toFixed(2)}</td>
+              <td>${Number(r["2024"]).toFixed(2)}</td>
+              <td>${Number(r["2025"]).toFixed(2)}</td>
+              <td class="trend-down">${Number(r.Net_Increase).toFixed(2)}</td>
+              <td class="trend-down">${Number(r.Pct_Change).toFixed(2)}%</td>
+            </tr>
+          `).join("")}
+        `;
+
+        // === Chart: Community Trends with Multiple Neon Colors ===
+        const communities = [...new Set(communityTrends.map(r => r.COMMUNITY))];
+        const years = [...new Set(communityTrends.map(r => r.YEAR))];
+
+        new Chart(document.getElementById("communityChart"), {
+          type: "line",
+          data: {
+            labels: years.map(y => `CYCLE ${y}`),
+            datasets: communities.map((c, index) => ({
+              label: `${c} COMMUNITY NODE`,
+              data: years.map(y => {
+                const row = communityTrends.find(r => r.YEAR === y && r.COMMUNITY === c);
+                return row ? row.CUTOFF : null;
+              }),
+              borderColor: neonColors[index % neonColors.length],
+              backgroundColor: `${neonColors[index % neonColors.length]}20`,
+              borderWidth: 3,
+              pointRadius: 6,
+              pointBackgroundColor: neonColors[index % neonColors.length],
+              pointBorderColor: "#ffffff",
+              pointBorderWidth: 2,
+              pointHoverRadius: 10,
+              fill: false,
+              tension: 0.4
+            }))
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: {
+                labels: {
+                  color: '#ffffff',
+                  font: {
+                    family: 'Orbitron',
+                    size: 12
+                  }
+                }
+              }
+            },
+            scales: {
+              x: {
+                ticks: {
+                  color: '#0080ff',
+                  font: {
+                    family: 'Rajdhani',
+                    size: 12
+                  }
+                },
+                grid: {
+                  color: 'rgba(0, 128, 255, 0.2)'
+                }
+              },
+              y: {
+                ticks: {
+                  color: '#0080ff',
+                  font: {
+                    family: 'Rajdhani',
+                    size: 12
+                  }
+                },
+                grid: {
+                  color: 'rgba(0, 128, 255, 0.2)'
+                }
+              }
+            },
+            interaction: {
+              intersect: false,
+              mode: 'index'
+            }
+          }
+        });
+
+      } catch (error) {
+        console.error("Neural Network Error:", error);
+        
+        // Show error in gaming style
+        document.body.innerHTML += `
+          <div style="
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: linear-gradient(45deg, #ff0000, #ff6600);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            font-family: 'Orbitron', monospace;
+            text-align: center;
+            z-index: 9999;
+            border: 2px solid #ff0000;
+            box-shadow: 0 0 30px rgba(255, 0, 0, 0.5);
+          ">
+            <h3>🚨 SYSTEM ERROR DETECTED 🚨</h3>
+            <p>Neural Network Connection Failed</p>
+            <p>Attempting to reconnect to data matrix...</p>
+            <div style="margin-top: 10px;">
+              <div class="spinner" style="margin: 0 auto;"></div>
+            </div>
+          </div>
+        `;
+      }
+    }
+
+    // Initialize the gaming dashboard
+    document.addEventListener("DOMContentLoaded", function() {
+      loadDashboard();
+      
+      // Add some gaming sound effects simulation (visual feedback)
+      document.addEventListener("click", function(e) {
+        if (e.target.tagName === "TH" || e.target.closest("tr")) {
+          // Create a brief flash effect for clicks
+          const flash = document.createElement("div");
+          flash.style.cssText = `
+            position: fixed;
+            top: ${e.clientY - 10}px;
+            left: ${e.clientX - 10}px;
+            width: 20px;
+            height: 20px;
+            background: radial-gradient(circle, #00ffff, transparent);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 9999;
+            animation: flashEffect 0.3s ease-out;
+          `;
+          
+          document.body.appendChild(flash);
+          setTimeout(() => flash.remove(), 300);
+        }
+      });
+      
+      // Add flash effect animation
+      const style = document.createElement("style");
+      style.textContent = `
+        @keyframes flashEffect {
+          0% { transform: scale(0); opacity: 1; }
+          100% { transform: scale(3); opacity: 0; }
+        }
+      `;
+      document.head.appendChild(style);
+    });
+
+    // Add some ambient background particle effects
+    function createParticles() {
+      const particleCount = 20;
+      for (let i = 0; i < particleCount; i++) {
+        const particle = document.createElement("div");
+        particle.style.cssText = `
+          position: fixed;
+          width: 2px;
+          height: 2px;
+          background: ${neonColors[Math.floor(Math.random() * neonColors.length)]};
+          border-radius: 50%;
+          pointer-events: none;
+          z-index: -1;
+          opacity: 0.3;
+          animation: float 10s linear infinite;
+          left: ${Math.random() * 100}vw;
+          top: ${Math.random() * 100}vh;
+          animation-delay: ${Math.random() * 10}s;
+        `;
+        document.body.appendChild(particle);
+      }
+    }
+
+    // Float animation for particles
+    const particleStyle = document.createElement("style");
+    particleStyle.textContent = `
+      @keyframes float {
+        0% { 
+          transform: translateY(0px) translateX(0px) rotate(0deg); 
+          opacity: 0; 
+        }
+        10% { opacity: 0.3; }
+        90% { opacity: 0.3; }
+        100% { 
+          transform: translateY(-100vh) translateX(50px) rotate(360deg); 
+          opacity: 0; 
+        }
+      }
+    `;
+    document.head.appendChild(particleStyle);
+
+    // Initialize particles
+    setTimeout(createParticles, 1000);
+  </script>
+</body>
+</html>

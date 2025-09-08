@@ -1,0 +1,1073 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🎮 NEON Branch Analytics Dashboard</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --neon-cyan: #00ffff;
+      --neon-pink: #ff00ff;
+      --neon-green: #00ff00;
+      --neon-purple: #8a2be2;
+      --neon-orange: #ff4500;
+      --neon-yellow: #ffff00;
+      --dark-bg: #0a0a0a;
+      --dark-card: #1a1a1a;
+      --grid-color: rgba(0, 255, 255, 0.1);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Rajdhani', monospace;
+      background: var(--dark-bg);
+      color: var(--neon-cyan);
+      overflow-x: hidden;
+      position: relative;
+      min-height: 100vh;
+    }
+
+    /* Animated Grid Background */
+    body::before {
+      content: '';
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-image: 
+        linear-gradient(rgba(0, 255, 255, 0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0, 255, 255, 0.03) 1px, transparent 1px);
+      background-size: 50px 50px;
+      animation: gridMove 20s linear infinite;
+      pointer-events: none;
+      z-index: -2;
+    }
+
+    body::after {
+      content: '';
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: radial-gradient(circle at 20% 50%, rgba(255, 0, 255, 0.1) 0%, transparent 50%),
+                  radial-gradient(circle at 80% 20%, rgba(0, 255, 0, 0.1) 0%, transparent 50%),
+                  radial-gradient(circle at 40% 80%, rgba(255, 69, 0, 0.1) 0%, transparent 50%);
+      pointer-events: none;
+      z-index: -1;
+    }
+
+    @keyframes gridMove {
+      0% { transform: translate(0, 0); }
+      100% { transform: translate(50px, 50px); }
+    }
+
+    @keyframes glitch {
+      0%, 100% { transform: translate(0); }
+      10% { transform: translate(-2px, -2px); }
+      20% { transform: translate(2px, 2px); }
+      30% { transform: translate(-2px, 2px); }
+      40% { transform: translate(2px, -2px); }
+      50% { transform: translate(-2px, -2px); }
+      60% { transform: translate(2px, 2px); }
+      70% { transform: translate(-2px, 2px); }
+      80% { transform: translate(2px, -2px); }
+      90% { transform: translate(-2px, -2px); }
+    }
+
+    @keyframes neonPulse {
+      0%, 100% { text-shadow: 0 0 5px var(--neon-cyan), 0 0 10px var(--neon-cyan), 0 0 15px var(--neon-cyan); }
+      50% { text-shadow: 0 0 10px var(--neon-cyan), 0 0 20px var(--neon-cyan), 0 0 30px var(--neon-cyan); }
+    }
+
+    @keyframes scanline {
+      0% { transform: translateX(-100%); }
+      100% { transform: translateX(100vw); }
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    /* Header */
+    .header {
+      text-align: center;
+      padding: 40px 20px;
+      background: linear-gradient(45deg, rgba(0, 255, 255, 0.1), rgba(255, 0, 255, 0.1));
+      border-bottom: 2px solid var(--neon-cyan);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .header::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 2px;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, var(--neon-cyan), transparent);
+      animation: scanline 3s linear infinite;
+    }
+
+    .main-title {
+      font-family: 'Orbitron', monospace;
+      font-size: 3.5rem;
+      font-weight: 900;
+      background: linear-gradient(45deg, var(--neon-cyan), var(--neon-pink), var(--neon-green));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      animation: glitch 2s infinite alternate, neonPulse 2s infinite;
+      text-transform: uppercase;
+      letter-spacing: 3px;
+    }
+
+    .subtitle {
+      font-size: 1.2rem;
+      color: var(--neon-green);
+      margin-top: 10px;
+      text-shadow: 0 0 10px var(--neon-green);
+    }
+
+    /* Container */
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    /* Grid Layout */
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+      gap: 30px;
+      margin-bottom: 40px;
+    }
+
+    /* Card Styles */
+    .card {
+      background: linear-gradient(135deg, var(--dark-card), rgba(26, 26, 26, 0.8));
+      border: 1px solid var(--neon-cyan);
+      border-radius: 15px;
+      padding: 25px;
+      position: relative;
+      overflow: hidden;
+      transition: all 0.3s ease;
+      box-shadow: 0 0 20px rgba(0, 255, 255, 0.1);
+    }
+
+    .card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 2px;
+      background: linear-gradient(90deg, var(--neon-cyan), var(--neon-pink), var(--neon-green));
+      animation: scanline 4s linear infinite;
+    }
+
+    .card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 10px 30px rgba(0, 255, 255, 0.3);
+      border-color: var(--neon-pink);
+    }
+
+    .card:nth-child(2):hover { border-color: var(--neon-green); box-shadow: 0 10px 30px rgba(0, 255, 0, 0.3); }
+    .card:nth-child(3):hover { border-color: var(--neon-orange); box-shadow: 0 10px 30px rgba(255, 69, 0, 0.3); }
+
+    .card-title {
+      font-family: 'Orbitron', monospace;
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--neon-cyan);
+      text-transform: uppercase;
+      margin-bottom: 20px;
+      text-shadow: 0 0 10px var(--neon-cyan);
+      position: relative;
+    }
+
+    .card:nth-child(2) .card-title { color: var(--neon-green); text-shadow: 0 0 10px var(--neon-green); }
+    .card:nth-child(3) .card-title { color: var(--neon-orange); text-shadow: 0 0 10px var(--neon-orange); }
+
+    /* Charts */
+    .chart-container {
+      position: relative;
+      height: 400px;
+      margin: 20px 0;
+    }
+
+    .chart-container.small {
+      height: 300px;
+    }
+
+    /* Tables */
+    .table-container {
+      margin-top: 40px;
+      background: var(--dark-card);
+      border: 1px solid var(--neon-cyan);
+      border-radius: 15px;
+      overflow: hidden;
+      box-shadow: 0 0 20px rgba(0, 255, 255, 0.1);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: transparent;
+    }
+
+    th {
+      background: linear-gradient(45deg, rgba(0, 255, 255, 0.2), rgba(255, 0, 255, 0.2));
+      color: var(--neon-cyan);
+      font-family: 'Orbitron', monospace;
+      font-weight: 700;
+      padding: 15px 10px;
+      text-align: center;
+      text-transform: uppercase;
+      font-size: 0.9rem;
+      text-shadow: 0 0 5px var(--neon-cyan);
+      border-bottom: 2px solid var(--neon-cyan);
+    }
+
+    td {
+      padding: 12px 10px;
+      text-align: center;
+      color: var(--neon-cyan);
+      border-bottom: 1px solid rgba(0, 255, 255, 0.2);
+      transition: all 0.3s ease;
+      font-weight: 500;
+    }
+
+    tr:hover td {
+      background: rgba(0, 255, 255, 0.1);
+      color: var(--neon-green);
+      text-shadow: 0 0 5px var(--neon-green);
+    }
+
+    .new-branch {
+      background: rgba(0, 255, 0, 0.1) !important;
+      border-left: 4px solid var(--neon-green);
+    }
+
+    .new-branch td {
+      color: var(--neon-green);
+      text-shadow: 0 0 5px var(--neon-green);
+    }
+
+    /* Section Headers */
+    .section-header {
+      font-family: 'Orbitron', monospace;
+      font-size: 2rem;
+      font-weight: 700;
+      color: var(--neon-pink);
+      text-transform: uppercase;
+      text-align: center;
+      margin: 40px 0 20px 0;
+      text-shadow: 0 0 15px var(--neon-pink);
+      position: relative;
+    }
+
+    .section-header::before,
+    .section-header::after {
+      content: '>>>>';
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--neon-cyan);
+      font-size: 1rem;
+      animation: neonPulse 1.5s infinite;
+    }
+
+    .section-header::before { left: -60px; }
+    .section-header::after { right: -60px; transform: translateY(-50%) rotate(180deg); }
+
+    /* New Branches Box */
+    .new-branches-box {
+      background: linear-gradient(135deg, rgba(0, 255, 0, 0.1), rgba(0, 255, 255, 0.1));
+      border: 2px solid var(--neon-green);
+      border-radius: 15px;
+      padding: 20px;
+      margin: 20px 0;
+      box-shadow: 0 0 20px rgba(0, 255, 0, 0.2);
+    }
+
+    .new-branches-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+      list-style: none;
+    }
+
+    .new-branches-list li {
+      background: rgba(0, 255, 0, 0.1);
+      border: 1px solid var(--neon-green);
+      border-radius: 8px;
+      padding: 10px 15px;
+      text-align: center;
+      color: var(--neon-green);
+      font-weight: 600;
+      text-shadow: 0 0 5px var(--neon-green);
+      transition: all 0.3s ease;
+    }
+
+    .new-branches-list li:hover {
+      background: rgba(0, 255, 0, 0.2);
+      transform: scale(1.05);
+    }
+
+    /* Loading States */
+    .loading {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 200px;
+      color: var(--neon-cyan);
+      font-size: 1.2rem;
+    }
+
+    .loader {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 3px solid rgba(0, 255, 255, 0.3);
+      border-radius: 50%;
+      border-top-color: var(--neon-cyan);
+      animation: spin 1s ease-in-out infinite;
+      margin-right: 10px;
+    }
+
+    .error {
+      color: var(--neon-pink);
+      text-align: center;
+      padding: 20px;
+      background: rgba(255, 0, 255, 0.1);
+      border: 1px solid var(--neon-pink);
+      border-radius: 10px;
+      margin: 20px 0;
+    }
+
+    /* Insights Terminal */
+    .insights {
+      background: linear-gradient(135deg, var(--dark-card), rgba(26, 26, 26, 0.9));
+      border: 2px solid var(--neon-purple);
+      border-radius: 15px;
+      padding: 25px;
+      margin: 40px 0;
+      font-family: 'Rajdhani', monospace;
+      position: relative;
+      box-shadow: 0 0 25px rgba(138, 43, 226, 0.2);
+    }
+
+    .insights::before {
+      content: '⚡ NEURAL NETWORK ANALYSIS';
+      position: absolute;
+      top: -12px;
+      left: 20px;
+      background: var(--dark-bg);
+      padding: 0 15px;
+      color: var(--neon-purple);
+      font-family: 'Orbitron', monospace;
+      font-weight: 700;
+      font-size: 0.9rem;
+      text-shadow: 0 0 10px var(--neon-purple);
+    }
+
+    .insight-item {
+      margin: 15px 0;
+      padding: 10px;
+      border-left: 3px solid var(--neon-purple);
+      background: rgba(138, 43, 226, 0.1);
+      border-radius: 0 8px 8px 0;
+    }
+
+    .insight-item::before {
+      content: '> ';
+      color: var(--neon-green);
+      font-weight: bold;
+    }
+
+    .blink {
+      animation: neonPulse 1s infinite;
+    }
+
+    /* Responsive Design */
+    @media (max-width: 768px) {
+      .grid {
+        grid-template-columns: 1fr;
+      }
+      
+      .main-title {
+        font-size: 2.5rem;
+      }
+      
+      .section-header::before,
+      .section-header::after {
+        display: none;
+      }
+      
+      .chart-container {
+        height: 300px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1 class="main-title">NEURAL BRANCH MATRIX</h1>
+    <div class="subtitle">>>> Elite Institution Analytics Grid (2023-2025) <<<</div>
+  </div>
+
+  <div class="container">
+    <!-- Main Charts Grid -->
+    <div class="grid">
+      <div class="card">
+        <h2 class="card-title">🎯 Branch Evolution Matrix</h2>
+        <div class="chart-container">
+          <canvas id="branchChart"></canvas>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2 class="card-title">🚀 Elite Growth Nodes</h2>
+        <div class="chart-container small">
+          <canvas id="topGrowingChart"></canvas>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2 class="card-title">📉 Declining Sectors</h2>
+        <div class="chart-container small">
+          <canvas id="topDecliningChart"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- Neural Network Analysis -->
+    <div class="insights" id="insightsSection">
+      <div class="loading">
+        <span class="loader"></span>
+        Loading Neural Network Analysis...
+      </div>
+    </div>
+
+    <!-- Growing Branches Table -->
+    <div class="section-header">Elite Growth Matrix</div>
+    <div class="table-container">
+      <table id="growingTable">
+        <thead>
+          <tr>
+            <th>Branch Protocol</th>
+            <th>2023 Nodes</th>
+            <th>2024 Nodes</th>
+            <th>2025 Nodes</th>
+            <th>23→24 Growth %</th>
+            <th>24→25 Growth %</th>
+            <th>Total Growth %</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td colspan="7" class="loading">
+              <span class="loader"></span>
+              Loading data from backend...
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Declining Branches Table -->
+    <div class="section-header">Declining Protocols</div>
+    <div class="table-container">
+      <table id="decliningTable">
+        <thead>
+          <tr>
+            <th>Branch Protocol</th>
+            <th>2023 Nodes</th>
+            <th>2024 Nodes</th>
+            <th>2025 Nodes</th>
+            <th>23→24 Change %</th>
+            <th>24→25 Change %</th>
+            <th>Total Change %</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td colspan="7" class="loading">
+              <span class="loader"></span>
+              Loading data from backend...
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- New Branches Section -->
+    <div class="section-header">🆕 New Protocol Activation</div>
+    <div class="new-branches-box">
+      <div class="new-branches-list" id="newBranchesGrid">
+        <li class="loading"><span class="loader"></span> Loading new branches...</li>
+      </div>
+    </div>
+  </div>
+
+<script>
+// Branch name mapping for better display
+const branchNames = {
+      "AO": "AEROSPACE ENGINEERING",
+      "AE": "AERONAUTICAL ENGINEERING", 
+      "AG": "AGRICULTURAL ENGINEERING",
+      "AN": "ANIMATION AND GRAPHICS",
+      "AP": "APPAREL TECHNOLOGY (SS)",
+      "AR": "ARCHITECTURE",
+      "BA": "ARCHITECTURE (SS)",
+      "AD": "ARTIFICIAL INTELLIGENCE AND DATA SCIENCE",
+      "AT": "ARTIFICIAL INTELLIGENCE AND DATA SCIENCE (SS)",
+      "AL": "ARTIFICIAL INTELLIGENCE AND MACHINE LEARNING",
+      "AU": "AUTOMOBILE ENGINEERING",
+      "AS": "AUTOMOBILE ENGINEERING (SS)",
+      "BP": "B.PLAN",
+      "DA": "BACHELOR OF DESIGN",
+      "BM": "BIO MEDICAL ENGINEERING",
+      "BY": "BIO MEDICAL ENGINEERING (SS)",
+      "BT": "BIO TECHNOLOGY",
+      "BS": "BIO TECHNOLOGY (SS)",
+      "BC": "BIO TECHNOLOGY AND BIO CHEMICAL ENGINEERING",
+      "CR": "CERAMIC TECHNOLOGY (SS)",
+      "CH": "CHEMICAL ENGINEERING",
+      "CL": "CHEMICAL ENGINEERING (SS)",
+      "CC": "CHEMICAL AND ELECTRO CHEMICAL ENGINEERING (SS)",
+      "CX": "CHEMICAL AND ELECTROCHEMICAL ENGINEERING",
+      "CE": "CIVIL ENGINEERING",
+      "CN": "CIVIL ENGINEERING (SS)",
+      "CZ": "CIVIL AND STRUCTURAL ENGINEERING",
+      "XC": "CIVIL ENGINEERING (TAMIL MEDIUM)",
+      "CK": "CIVIL ENGINEERING (ENVIRONMENTAL ENGINEERING)",
+      "CO": "COMPUTER AND COMMUNICATION ENGINEERING",
+      "CW": "COMPUTER SCIENCE AND BUSINESS SYSTEM (SS)",
+      "CB": "COMPUTER SCIENCE AND BUSINESS SYSTEM",
+      "CD": "COMPUTER SCIENCE AND DESIGN",
+      "CS": "COMPUTER SCIENCE AND ENGINEERING",
+      "AM": "COMPUTER SCIENCE AND ENGINEERING (AI & ML)",
+      "CG": "COMPUTER SCIENCE AND ENGINEERING (AI & ML) (SS)",
+      "SC": "COMPUTER SCIENCE AND ENGINEERING (CYBER SECURITY)",
+      "CF": "COMPUTER SCIENCE AND ENGINEERING (DATA SCIENCE)",
+      "SB": "COMPUTER SCIENCE AND ENGINEERING (IoT & CYBER SECURITY INCLUDING BLOCKCHAIN)",
+      "CI": "COMPUTER SCIENCE AND ENGINEERING (IoT)",
+      "CM": "COMPUTER SCIENCE AND ENGINEERING (SS)",
+      "XS": "COMPUTER SCIENCE AND ENGINEERING (TAMIL)",
+      "CA": "COMPUTER SCIENCE AND ENGINEERING (ARTIFICIAL INTELLIGENCE)",
+      "TS": "COMPUTER SCIENCE AND TECHNOLOGY",
+      "CT": "COMPUTER TECHNOLOGY",
+      "CY": "CYBER SECURITY",
+      "EF": "ELECTRICAL AND COMPUTER ENGINEERING",
+      "ES": "ELECTRICAL AND ELECTRONICS (SANDWICH) (SS)",
+      "EE": "ELECTRICAL AND ELECTRONICS ENGINEERING",
+      "EY": "ELECTRICAL AND ELECTRONICS ENGINEERING (SS)",
+      "ET": "ELECTRONICS AND TELECOMMUNICATION ENGINEERING",
+      "EA": "ELECTRONICS AND COMMUNICATION (ADVANCED COMMUNICATION TECHNOLOGY)",
+      "EC": "ELECTRONICS AND COMMUNICATION ENGINEERING",
+      "EM": "ELECTRONICS AND COMMUNICATION ENGINEERING (SS)",
+      "EX": "ELECTRONICS AND COMPUTER ENGINEERING",
+      "EI": "ELECTRONICS AND INSTRUMENTATION ENGINEERING",
+      "EV": "ELECTRONICS ENGINEERING (VLSI DESIGN AND TECHNOLOGY)",
+      "EL": "ELECTRONICS ENGINEERING (VLSI DESIGN AND TECHNOLOGY)",
+      "IX": "ELECTRONICS INSTRUMENTATION AND CONTROL ENGINEERING",
+      "EN": "ENVIRONMENTAL ENGINEERING",
+      "FT": "FASHION TECHNOLOGY",
+      "FY": "FASHION TECHNOLOGY (SS)",
+      "FD": "FOOD TECHNOLOGY",
+      "FS": "FOOD TECHNOLOGY (SS)",
+      "GI": "GEO INFORMATICS",
+      "HT": "HANDLOOM AND TEXTILE TECHNOLOGY",
+      "IB": "INDUSTRIAL BIO TECHNOLOGY",
+      "IS": "INDUSTRIAL BIO TECHNOLOGY (SS)",
+      "IE": "INDUSTRIAL ENGINEERING",
+      "IN": "INDUSTRIAL ENGINEERING AND MANAGEMENT",
+      "SE": "INFORMATION SCIENCE AND ENGINEERING",
+      "IT": "INFORMATION TECHNOLOGY",
+      "IM": "INFORMATION TECHNOLOGY (SS)",
+      "IC": "INSTRUMENTATION AND CONTROL ENGINEERING",
+      "IY": "INSTRUMENTATION AND CONTROL ENGINEERING (SS)",
+      "ID": "INTERIOR DESIGN (SS)",
+      "LE": "LEATHER TECHNOLOGY",
+      "CJ": "M.TECH. COMPUTER SCIENCE AND ENGINEERING (INTEGRATED 5 YEARS)",
+      "MN": "MANUFACTURING ENGINEERING",
+      "MR": "MARINE ENGINEERING",
+      "MA": "MATERIAL SCIENCE AND ENGINEERING (SS)",
+      "MU": "MECHANICAL AND AUTOMATION ENGINEERING",
+      "MO": "MECHANICAL AND MECHATRONICS ENGINEERING (ADDITIVE MANUFACTURING)",
+      "MJ": "MECHANICAL AND SMART MANUFACTURING",
+      "ME": "MECHANICAL ENGINEERING",
+      "MM": "MECHANICAL ENGINEERING (MANUFACTURING)",
+      "MH": "MECHANICAL ENGINEERING (SANDWICH)",
+      "MS": "MECHANICAL ENGINEERING (SANDWICH) (SS)",
+      "MF": "MECHANICAL ENGINEERING (SS)",
+      "XM": "MECHANICAL ENGINEERING (TAMIL MEDIUM)",
+      "MB": "MECHANICAL ENGINEERING (AUTOMOBILE)",
+      "MC": "MECHATRONICS",
+      "MG": "MECHATRONICS (SS)",
+      "MZ": "MECHATRONICS ENGINEERING",
+      "MD": "MEDICAL ELECTRONICS ENGINEERING",
+      "MT": "METALLURGICAL ENGINEERING",
+      "MY": "METALLURGICAL ENGINEERING (SS)",
+      "MI": "MINING ENGINEERING",
+      "PD": "PETRO CHEMICAL ENGINEERING",
+      "PC": "PETRO CHEMICAL TECHNOLOGY",
+      "PE": "PETROLEUM ENGINEERING",
+      "PP": "PETROLEUM ENGINEERING AND TECHNOLOGY (SS)",
+      "PH": "PHARMACEUTICAL TECHNOLOGY",
+      "PM": "PHARMACEUTICAL TECHNOLOGY (SS)",
+      "PA": "PLASTIC TECHNOLOGY",
+      "PT": "PRINTING AND PACKING TECHNOLOGY",
+      "PR": "PRODUCTION ENGINEERING",
+      "PS": "PRODUCTION ENGINEERING (SANDWICH) (SS)",
+      "PN": "PRODUCTION ENGINEERING (SS)",
+      "RI": "ROBOTICS AND ARTIFICIAL INTELLIGENCE",
+      "RM": "ROBOTICS AND AUTOMATION",
+      "RA": "ROBOTICS AND AUTOMATION (SS)",
+      "RP": "RUBBER AND PLASTIC TECHNOLOGY",
+      "SF": "SAFETY AND FIRE ENGINEERING",
+      "TC": "TEXTILE CHEMISTRY",
+      "TX": "TEXTILE TECHNOLOGY",
+      "TT": "TEXTILE TECHNOLOGY (SS)"
+    };
+
+let branchChart, topGrowingChart, topDecliningChart;
+
+// Utility functions
+function formatNumber(num) {
+  if (num === null || num === undefined) return "0";
+  return typeof num === 'number' ? num.toLocaleString() : num.toString();
+}
+
+function formatPercent(num) {
+  if (num === null || num === undefined) return "0%";
+  return (typeof num === 'number' ? num.toFixed(1) : num.toString()) + "%";
+}
+
+function getBranchDisplayName(code) {
+  return branchNames[code] || code;
+}
+
+function showError(message, elementId) {
+  const element = document.getElementById(elementId);
+  if (element) {
+    element.innerHTML = `<div class="error">⚠️ ERROR: ${message}</div>`;
+  }
+}
+
+function createChart(canvasId, type, data, options = {}) {
+  const ctx = document.getElementById(canvasId);
+  if (!ctx) {
+    console.error(`Canvas with id ${canvasId} not found`);
+    return;
+  }
+  
+  return new Chart(ctx, {
+    type: type,
+    data: data,
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          labels: {
+            color: '#00ffff'
+          }
+        }
+      },
+      scales: {
+        x: {
+          ticks: { 
+            color: '#00ffff',
+            maxRotation: 45
+          },
+          grid: { 
+            color: 'rgba(0, 255, 255, 0.1)' 
+          }
+        },
+        y: {
+          ticks: { 
+            color: '#00ffff' 
+          },
+          grid: { 
+            color: 'rgba(0, 255, 255, 0.1)' 
+          }
+        }
+      },
+      ...options
+    }
+  });
+}
+
+function renderTable(tbodySelector, data, isNewBranch = false) {
+  const tbody = document.querySelector(tbodySelector);
+  if (!tbody) {
+    console.error(`Table body with selector ${tbodySelector} not found`);
+    return;
+  }
+
+  if (!data || data.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="7">No data available</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = data.map(branch => {
+    const trClass = isNewBranch || branch.new_branch ? "new-branch" : "";
+    return `
+      <tr class="${trClass}">
+        <td>${getBranchDisplayName(branch.BRANCHCODE)}</td>
+        <td>${formatNumber(branch["2023"])}</td>
+        <td>${formatNumber(branch["2024"])}</td>
+        <td>${formatNumber(branch["2025"])}</td>
+        <td>${formatPercent(branch.growth_percent_23_24)}</td>
+        <td>${formatPercent(branch.growth_percent_24_25)}</td>
+        <td>${formatPercent(branch.growth_percent_23_25)}</td>
+      </tr>
+    `;
+  }).join('');
+}
+
+function updateInsights(data) {
+  const insightsSection = document.getElementById('insightsSection');
+  if (!insightsSection || !data) return;
+
+  // Find top performer
+  let topPerformer = null;
+  let maxValue = 0;
+  
+  if (data.branches) {
+    data.branches.forEach(branch => {
+      const val2025 = branch["2025"] || 0;
+      if (val2025 > maxValue) {
+        maxValue = val2025;
+        topPerformer = branch;
+      }
+    });
+  }
+
+  // Find top growth
+  let topGrowth = null;
+  let maxGrowth = -Infinity;
+  
+  if (data.branches) {
+    data.branches.forEach(branch => {
+      const growth = branch.growth_percent_23_25 || 0;
+      if (growth > maxGrowth) {
+        maxGrowth = growth;
+        topGrowth = branch;
+      }
+    });
+  }
+
+  const newBranchCount = data.new_branches ? data.new_branches.length : 0;
+  const growingCount = data.top_growing ? data.top_growing.length : 0;
+
+  insightsSection.innerHTML = `
+    <div class="insight-item">
+      <strong>TOP PERFORMER:</strong> ${topPerformer ? getBranchDisplayName(topPerformer.BRANCHCODE) + ' leads with ' + formatNumber(maxValue) + ' nodes in 2025' : 'No data available'} <span class="blink">█</span>
+    </div>
+    <div class="insight-item">
+      <strong>GROWTH CHAMPION:</strong> ${topGrowth ? getBranchDisplayName(topGrowth.BRANCHCODE) + ' shows ' + formatPercent(maxGrowth) + ' neural expansion' : 'No growth data available'}
+    </div>
+    <div class="insight-item">
+      <strong>EMERGING SECTORS:</strong> ${newBranchCount} new branch protocols activated in the system
+    </div>
+    <div class="insight-item">
+      <strong>SYSTEM STATUS:</strong> ${growingCount} active nodes showing positive expansion patterns
+    </div>
+  `;
+}
+
+function updateNewBranchesGrid(newBranches) {
+  const grid = document.getElementById('newBranchesGrid');
+  if (!grid) return;
+
+  if (!newBranches || newBranches.length === 0) {
+    grid.innerHTML = '<li>No new branches detected</li>';
+    return;
+  }
+
+  grid.innerHTML = newBranches.map(branch => 
+    `<li>${getBranchDisplayName(branch)}</li>`
+  ).join('');
+}
+
+async function loadBranchData() {
+  try {
+    console.log('Fetching data from /branch_data...');
+    
+    const response = await fetch('/branch_data');
+    
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+    
+    const data = await response.json();
+    console.log('Data received:', data);
+
+    // Validate data structure
+    if (!data.branches || !Array.isArray(data.branches)) {
+      throw new Error('Invalid data structure: branches array missing');
+    }
+
+    // Process the data
+  const topGrowing = data.branches
+  .filter(b => data.top_growing && data.top_growing.includes(b.BRANCHCODE))
+  .sort((a, b) => {
+    const growthA = (a["2025"] || 0) - (a["2023"] || 0);
+    const growthB = (b["2025"] || 0) - (b["2023"] || 0);
+    return growthB - growthA; // descending
+  })
+  .slice(0, 10);
+
+    const topDeclining = data.branches
+      .filter(b => data.top_declining && data.top_declining.includes(b.BRANCHCODE))
+      .slice(0, 10);
+
+    const newBranches = data.new_branches || [];
+
+    // Update tables
+    renderTable("#growingTable tbody", topGrowing);
+    renderTable("#decliningTable tbody", topDeclining);
+
+    // Update new branches grid
+    updateNewBranchesGrid(newBranches);
+
+    // Update insights
+    updateInsights(data);
+
+    // Create charts
+   const top10Branches = [...data.branches]
+  .sort((a, b) => {
+    const totalA = (a["2023"] || 0) + (a["2024"] || 0) + (a["2025"] || 0);
+    const totalB = (b["2023"] || 0) + (b["2024"] || 0) + (b["2025"] || 0);
+    return totalB - totalA; // descending
+  })
+  .slice(0, 10);
+
+
+    // Main evolution chart
+    if (branchChart) branchChart.destroy();
+    branchChart = createChart('branchChart', 'line', {
+      labels: top10Branches.map(b => getBranchDisplayName(b.BRANCHCODE)),
+      datasets: [
+        {
+          label: '2023',
+          data: top10Branches.map(b => b["2023"] || 0),
+          borderColor: '#ff00ff',
+          backgroundColor: 'rgba(255, 0, 255, 0.1)',
+          fill: false,
+          tension: 0.4
+        },
+        {
+          label: '2024',
+          data: top10Branches.map(b => b["2024"] || 0),
+          borderColor: '#00ffff',
+          backgroundColor: 'rgba(0, 255, 255, 0.1)',
+          fill: false,
+          tension: 0.4
+        },
+        {
+          label: '2025',
+          data: top10Branches.map(b => b["2025"] || 0),
+          borderColor: '#00ff00',
+          backgroundColor: 'rgba(0, 255, 0, 0.1)',
+          fill: false,
+          tension: 0.4
+        }
+      ]
+    });
+
+    // Top growing chart
+    if (topGrowingChart) topGrowingChart.destroy();
+    if (topGrowing.length > 0) {
+      topGrowingChart = createChart('topGrowingChart', 'bar', {
+        labels: topGrowing.map(b => getBranchDisplayName(b.BRANCHCODE)),
+        datasets: [{
+          label: 'Growth %',
+          data: topGrowing.map(b => b.growth_percent_23_25 || 0),
+          backgroundColor: 'rgba(0, 255, 0, 0.6)',
+          borderColor: '#00ff00',
+          borderWidth: 2
+        }]
+      });
+    }
+
+    // Top declining chart
+    if (topDecliningChart) topDecliningChart.destroy();
+    if (topDeclining.length > 0) {
+      topDecliningChart = createChart('topDecliningChart', 'bar', {
+        labels: topDeclining.map(b => getBranchDisplayName(b.BRANCHCODE)),
+        datasets: [{
+          label: 'Change %',
+          data: topDeclining.map(b => b.growth_percent_23_25 || 0),
+          backgroundColor: 'rgba(255, 69, 0, 0.6)',
+          borderColor: '#ff4500',
+          borderWidth: 2
+        }]
+      });
+    }
+
+  } catch (error) {
+    console.error('Error loading branch data:', error);
+    
+    // Show error messages in all sections
+    const errorMessage = error.message;
+    
+    // Update tables with error message
+    document.querySelector("#growingTable tbody").innerHTML = 
+      `<tr><td colspan="7" class="error">⚠️ Failed to load data: ${errorMessage}</td></tr>`;
+    
+    document.querySelector("#decliningTable tbody").innerHTML = 
+      `<tr><td colspan="7" class="error">⚠️ Failed to load data: ${errorMessage}</td></tr>`;
+    
+    // Update insights section
+    document.getElementById('insightsSection').innerHTML = 
+      `<div class="error">⚠️ Unable to load neural network analysis: ${errorMessage}</div>`;
+    
+    // Update new branches grid
+    document.getElementById('newBranchesGrid').innerHTML = 
+      `<li class="error">⚠️ Failed to load new branches: ${errorMessage}</li>`;
+    
+    // Show error in charts
+    ['branchChart', 'topGrowingChart', 'topDecliningChart'].forEach(chartId => {
+      const canvas = document.getElementById(chartId);
+      if (canvas) {
+        const ctx = canvas.getContext('2d');
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = '#ff00ff';
+        ctx.font = '16px Rajdhani';
+        ctx.textAlign = 'center';
+        ctx.fillText('⚠️ Failed to load chart data', canvas.width / 2, canvas.height / 2);
+        ctx.fillText(`Error: ${errorMessage}`, canvas.width / 2, canvas.height / 2 + 25);
+      }
+    });
+  }
+}
+
+
+
+// Function to test with mock data (useful for development)
+async function loadMockData() {
+  console.log('Loading mock data for testing...');
+  const mockData = generateMockData();
+  
+  // Simulate API delay
+  await new Promise(resolve => setTimeout(resolve, 1000));
+  
+  // Process mock data same as real data
+  const topGrowing = mockData.branches
+    .filter(b => mockData.top_growing.includes(b.BRANCHCODE))
+    .slice(0, 10);
+
+  const topDeclining = mockData.branches
+    .filter(b => mockData.top_declining.includes(b.BRANCHCODE))
+    .slice(0, 10);
+
+  const newBranches = mockData.new_branches || [];
+
+  // Update tables
+  renderTable("#growingTable tbody", topGrowing);
+  renderTable("#decliningTable tbody", topDeclining);
+
+  // Update new branches grid
+  updateNewBranchesGrid(newBranches);
+
+  // Update insights
+  updateInsights(mockData);
+
+  // Create charts with mock data
+  if (branchChart) branchChart.destroy();
+  branchChart = createChart('branchChart', 'line', {
+    labels: mockData.branches.map(b => getBranchDisplayName(b.BRANCHCODE)),
+    datasets: [
+      {
+        label: '2023',
+        data: mockData.branches.map(b => b["2023"] || 0),
+        borderColor: '#ff00ff',
+        backgroundColor: 'rgba(255, 0, 255, 0.1)',
+        fill: false,
+        tension: 0.4
+      },
+      {
+        label: '2024',
+        data: mockData.branches.map(b => b["2024"] || 0),
+        borderColor: '#00ffff',
+        backgroundColor: 'rgba(0, 255, 255, 0.1)',
+        fill: false,
+        tension: 0.4
+      },
+      {
+        label: '2025',
+        data: mockData.branches.map(b => b["2025"] || 0),
+        borderColor: '#00ff00',
+        backgroundColor: 'rgba(0, 255, 0, 0.1)',
+        fill: false,
+        tension: 0.4
+      }
+    ]
+  });
+
+  if (topGrowingChart) topGrowingChart.destroy();
+  topGrowingChart = createChart('topGrowingChart', 'bar', {
+    labels: topGrowing.map(b => getBranchDisplayName(b.BRANCHCODE)),
+    datasets: [{
+      label: 'Growth %',
+      data: topGrowing.map(b => b.growth_percent_23_25 || 0),
+      backgroundColor: 'rgba(0, 255, 0, 0.6)',
+      borderColor: '#00ff00',
+      borderWidth: 2
+    }]
+  });
+
+  if (topDecliningChart) topDecliningChart.destroy();
+  topDecliningChart = createChart('topDecliningChart', 'bar', {
+    labels: topDeclining.map(b => getBranchDisplayName(b.BRANCHCODE)),
+    datasets: [{
+      label: 'Change %',
+      data: topDeclining.map(b => b.growth_percent_23_25 || 0),
+      backgroundColor: 'rgba(255, 69, 0, 0.6)',
+      borderColor: '#ff4500',
+      borderWidth: 2
+    }]
+  });
+}
+
+// Initialize dashboard when page loads
+document.addEventListener("DOMContentLoaded", async () => {
+  console.log('Dashboard initializing...');
+  
+  // Try to load real data first, fallback to mock data if needed
+  try {
+    await loadBranchData();
+  } catch (error) {
+    console.log('Real API failed, trying mock data for demonstration...');
+    // Uncomment the line below to use mock data when backend is not available
+    // await loadMockData();
+  }
+});
+
+// Refresh data function (can be called manually or on interval)
+function refreshData() {
+  console.log('Refreshing dashboard data...');
+  loadBranchData();
+}
+
+// Auto-refresh every 5 minutes (optional)
+// setInterval(refreshData, 5 * 60 * 1000);
+</script>
+</body>
+</html>
